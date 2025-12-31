@@ -36,12 +36,10 @@ public class CategoryController {
     private User getTargetUserWithPermissionCheck(Integer targetId, User reqUser, boolean needWriteAccess) throws Exception {
         if (targetId == null) return reqUser;
         User targetUser = userService.findUserById(targetId);
-        System.out.println("DEBUG: targetId=" + targetId + ", targetUser=" + targetUser);
         if (targetUser == null) throw new RuntimeException("Target user not found");
         boolean hasAccess = needWriteAccess ?
                 friendshipService.canUserModifyExpenses(targetId, reqUser.getId()) :
                 friendshipService.canUserAccessExpenses(targetId, reqUser.getId());
-        System.out.println("DEBUG: hasAccess=" + hasAccess);
         if (!hasAccess) {
             String action = needWriteAccess ? "modify" : "access";
             throw new RuntimeException("You don't have permission to " + action + " this user's categories");

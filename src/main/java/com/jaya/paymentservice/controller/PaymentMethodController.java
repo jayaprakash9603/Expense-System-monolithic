@@ -136,10 +136,7 @@ public class PaymentMethodController {
                 throw new RuntimeException("Payment method cannot be null");
             }
 
-            // Log incoming payment method for debugging
-            System.out.println("Saving payment method: " + paymentMethod.getName() +
-                    ", userId: " + paymentMethod.getUserId() +
-                    ", type: " + paymentMethod.getType());
+
 
             return paymentMethodService.save(paymentMethod);
         } catch (Exception e) {

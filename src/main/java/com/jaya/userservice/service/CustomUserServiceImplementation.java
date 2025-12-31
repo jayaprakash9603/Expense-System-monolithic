@@ -37,14 +37,11 @@ public class CustomUserServiceImplementation implements UserDetailsService {
         if (userRoles != null && !userRoles.isEmpty()) {
             for (String roleName : userRoles) {
                 authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName.toUpperCase().trim()));
-                System.out.println("Added authority: ROLE_" + roleName.toUpperCase().trim());
             }
         } else {
             authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
-            System.out.println("User " + username + " assigned default role: ROLE_USER");
         }
 
-        System.out.println("User " + username + " has authorities: " + authorities);
 
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),

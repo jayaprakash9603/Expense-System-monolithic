@@ -248,7 +248,6 @@ public class BillServiceImpl implements BillService {
         if (bill == null) {
             throw new Exception("Bill not found for expense ID: " + expenseid);
         }
-        System.out.println("bill id" + bill.getId() + "expense id " + bill.getExpenseId());
         return bill;
     }
 
@@ -423,7 +422,6 @@ public class BillServiceImpl implements BillService {
                 helper.validateBillData(bill);
 
                 ExpenseDTO Expense = helper.createExpenseFromBill(bill, user);
-                System.out.println(("category id in bill" + Expense.getCategoryId()));
                 ExpenseDTO savedExpense = expenseService.addExpense(Expense, userId);
 
                 Bill toSave = helper.mapExpenseToBill(bill, savedExpense);

@@ -18,7 +18,7 @@ public class RoleServiceImplementation implements RoleService {
 
     @Override
     public Role createRole(Role role) {
-        System.out.println("Creating Role: " + role);
+
 
         // Validate input
         if (role == null || !hasText(role.getName())) {

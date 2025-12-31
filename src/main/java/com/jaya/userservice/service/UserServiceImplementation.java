@@ -42,14 +42,10 @@ public class UserServiceImplementation implements UserService {
         User user = userRepository.findByEmail(email);
 
         // Debug logging
-        System.out.println("=== GET USER PROFILE DEBUG ===");
-        System.out.println("Roles from user T: " + (user != null ? user.getRoles() : null));
-        System.out.println("User found: " + (user != null));
+
         if (user != null) {
-            System.out.println("User roles count: " + user.getRoles().size());
-            for (String roleName : user.getRoles()) {
-                System.out.println("User role: " + roleName);
-            }
+
+
 
             // Handle existing users with null currentMode (created before this feature)
             if (user.getCurrentMode() == null || user.getCurrentMode().trim().isEmpty()) {
@@ -57,7 +53,6 @@ public class UserServiceImplementation implements UserService {
                 user.setCurrentMode("USER");
                 user.setUpdatedAt(LocalDateTime.now());
                 user = userRepository.save(user);
-                System.out.println("Set default currentMode to USER for existing user: " + user.getEmail());
             }
         }
 

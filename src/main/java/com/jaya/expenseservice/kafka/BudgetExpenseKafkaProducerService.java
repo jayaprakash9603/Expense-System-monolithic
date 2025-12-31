@@ -22,7 +22,6 @@ public class BudgetExpenseKafkaProducerService {
     public void sendBudgetExpenseEvent(BudgetExpenseEvent event) {
 
 
-        System.out.println("Expense ids"+event.getBudgetIds()+"action"+event.getAction());
         try {
             kafkaTemplate.send(BUDGET_EXPENSE_TOPIC, event);
             logger.info("Budget expense event sent for expense ID: {} and user: {}",

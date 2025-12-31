@@ -1279,7 +1279,7 @@ public class BudgetServiceImpl implements BudgetService {
             List<Expense> windowExpenses = expenseService.findByUserIdAndDateBetweenAndIncludeInBudgetTrue(
                     effectiveStart, effectiveEnd, userId);
 
-            System.out.println("expenses count" + windowExpenses.size());
+
 
             // Reduce to those linked to this budget via expenseIds set
             Set<Integer> expenseIds = budget.getExpenseIds() != null ? budget.getExpenseIds() : Collections.emptySet();

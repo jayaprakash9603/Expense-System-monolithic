@@ -1104,7 +1104,6 @@ public class CategoryService {
         if (categories.isEmpty()) {
             throw new Exception("Not found");
         } else {
-            System.out.println("Categories found with the name: " + name);
             // Filter categories by name
             List<Category> foundCategories = categories.stream()
                     .filter(category -> category.getName().equals(name))

@@ -334,8 +334,6 @@ public class ExpenseCoreServiceImpl implements ExpenseCoreService {
                     Map<Integer, Set<Integer>> expenseIdsMap = paymentMethod.getExpenseIds();
                     Set<Integer> userExpenseSet = expenseIdsMap.getOrDefault(userId, new HashSet<>());
                     userExpenseSet.remove(expense.getId());
-                    System.out.println(
-                            "Removing expense ID " + expense.getId() + " from payment method " + userExpenseSet);
                     if (userExpenseSet.isEmpty()) {
                         expenseIdsMap.remove(userId);
                     } else {
@@ -1302,10 +1300,7 @@ public class ExpenseCoreServiceImpl implements ExpenseCoreService {
             // Fetch expenses from repository
             List<Expense> expenses = expenseRepository.findAllByUserIdAndIdIn(userId, validExpenseIds);
 
-            // Log the operation for audit purposes
-            if (!expenses.isEmpty()) {
-                System.out.println("Retrieved " + expenses.size() + " expenses for user " + userId);
-            }
+
 
             return expenses;
 
@@ -1668,7 +1663,7 @@ public class ExpenseCoreServiceImpl implements ExpenseCoreService {
                 continue;
             }
 
-            System.out.println("testing after catch");
+
             if (budgetOpt != null) {
                 Budget budget = budgetOpt;
                 LocalDate expenseDate = expense.getDate();

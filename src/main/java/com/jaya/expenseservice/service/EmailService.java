@@ -58,7 +58,6 @@ public class EmailService {
         helper.setText(text, isHtml);
         helper.addAttachment(attachmentFilename, attachment);
 
-        System.out.println("email was sending");
 
         mailSender.send(message);
 

@@ -100,7 +100,6 @@ public class ExpenseCategoryServiceImpl implements ExpenseCategoryService {
     @Override
     public List<Map<String, Object>> getTotalByCategory(Integer userId) {
         List<Object[]> result = expenseRepository.findTotalExpensesGroupedByCategory(userId);
-        System.out.println("Result size: " + result.size());
         List<Map<String, Object>> response = new ArrayList<>();
 
         for (Object[] row : result) {
