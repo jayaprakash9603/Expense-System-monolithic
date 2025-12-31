@@ -57,7 +57,7 @@ spring:
       auto-commit-interval: ${SPRING_KAFKA_CONSUMER_AUTO_COMMIT_INTERVAL:1000}
 
 # Logging configuration
-logging:
+logging:  
   level:
     # Kafka loggers
     org.apache.kafka: ${LOGGING_LEVEL_KAFKA:WARN}

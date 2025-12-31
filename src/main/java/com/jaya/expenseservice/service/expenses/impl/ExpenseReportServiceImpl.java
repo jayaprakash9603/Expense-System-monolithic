@@ -26,6 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -103,6 +104,7 @@ public class ExpenseReportServiceImpl implements ExpenseReportService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public String generateExcelReport(Integer userId) throws Exception {
         List<Expense> expenses = expenseRepository.findByUserId(userId);
 
@@ -336,13 +338,17 @@ public class ExpenseReportServiceImpl implements ExpenseReportService {
     // --- helpers: categories cache and utilities ---
     private Map<Integer, Category> preloadCategories(Integer userId) throws Exception {
         Map<Integer, Category> cache = new HashMap<>();
-        List<Category> categories = categoryService.getAllForUser(userId);
-        if (categories != null) {
-            for (Category c : categories) {
-                if (c != null && c.getId() != null) {
-                    cache.put(c.getId(), c);
-                }
+        // delegate to existing CategoryService logic to fetch all categories for the user
+        List<Category> categories = categoryService.getAll(userId);
+        for (Category c : categories) {
+            // force initialization of potentially lazy collections within the transactional context
+            if (c.getUserIds() != null) {
+                c.getUserIds().size();
             }
+            if (c.getEditUserIds() != null) {
+                c.getEditUserIds().size();
+            }
+            cache.put(c.getId(), c);
         }
         return cache;
     }
