@@ -1,0 +1,112 @@
+package com.jaya.expenseservice.util;
+
+
+import com.jaya.friendshipservice.service.FriendshipService;
+import com.jaya.userservice.modal.User;
+import com.jaya.userservice.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+
+import java.util.function.Function;
+
+
+@Component
+public class UserPermissionHelper {
+
+    private final UserService userService;
+
+    private final FriendshipService friendshipService;
+
+    private final Logger logger= LoggerFactory.getLogger(UserPermissionHelper.class);
+
+    @Autowired
+    public UserPermissionHelper(UserService userService, @org.springframework.context.annotation.Lazy FriendshipService friendshipService) {
+        this.userService = userService;
+        this.friendshipService = friendshipService;
+    }
+
+
+    public User validateUser(String jwt) throws Exception {
+
+        User reqUser = userService.getUserProfile(jwt);
+        if (reqUser == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
+        }
+        return reqUser;
+    }
+    public User getTargetUserWithPermissionCheck(Integer targetId, User reqUser, boolean needWriteAccess)  {
+
+        try {
+            if (targetId == null) {
+                return reqUser;
+            }
+            User targetUser = userService.findUserById(targetId);
+            if (targetUser == null) {
+                throw new RuntimeException("Target user not found");
+            }
+
+            boolean hasAccess = needWriteAccess ?
+                    friendshipService.canUserModifyExpenses(targetId, reqUser.getId()) :
+                    friendshipService.canUserAccessExpenses(targetId, reqUser.getId());
+
+            if (!hasAccess) {
+                String action = needWriteAccess ? "modify" : "access";
+                throw new RuntimeException("You don't have permission to " + action + " this user's expenses");
+            }
+            return targetUser;
+        }
+        catch (Exception e)
+        {
+            logger.error("Exception occurred"+e);
+        }
+        return reqUser;
+    }
+
+
+    public User getTargetUserWithPermissionCheck(Integer targetId, String jwt, boolean needWriteAccess) throws Exception {
+
+        User reqUser=validateUser(jwt);
+
+        try {
+            if (targetId == null) {
+                return reqUser;
+            }
+            User targetUser = userService.findUserById(targetId);
+            if (targetUser == null) {
+                throw new RuntimeException("Target user not found");
+            }
+
+            boolean hasAccess = needWriteAccess ?
+                    friendshipService.canUserModifyExpenses(targetId, reqUser.getId()) :
+                    friendshipService.canUserAccessExpenses(targetId, reqUser.getId());
+
+            if (!hasAccess) {
+                String action = needWriteAccess ? "modify" : "access";
+                throw new RuntimeException("You don't have permission to " + action + " this user's expenses");
+            }
+            return targetUser;
+        }
+        catch (Exception e)
+        {
+            logger.error("Exception occurred"+e);
+        }
+        return reqUser;
+    }
+
+    public <T> ResponseEntity<?> executeWithPermissionCheck(String jwt, Integer targetId, boolean needWriteAccess,
+                                                            Function<User, T> operation, Function<RuntimeException, ResponseEntity<?>> runtimeHandler) {
+        try {
+            User reqUser = userService.getUserProfile(jwt);
+            User targetUser = getTargetUserWithPermissionCheck(targetId, reqUser, needWriteAccess);
+            T result = operation.apply(targetUser);
+            return ResponseEntity.ok(result);
+        } catch (RuntimeException e) {
+            return runtimeHandler.apply(e);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(e.getMessage());
+        }
+    }
+}

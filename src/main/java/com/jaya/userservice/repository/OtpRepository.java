@@ -1,0 +1,13 @@
+package com.jaya.userservice.repository;
+
+
+
+import com.jaya.userservice.modal.Otp;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface OtpRepository extends JpaRepository<Otp, Long> {
+    Optional<Otp> findByEmailAndOtp(String email, String otp);
+    void deleteByEmail(String email);
+}

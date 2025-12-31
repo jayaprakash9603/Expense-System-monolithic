@@ -1,0 +1,76 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: ${SPRING_APPLICATION_NAME:EXPENSE-TRACKING-SYSTEM}
+
+  cloud:
+    compatibility-verifier:
+      enabled: ${SPRING_CLOUD_COMPATIBILITY_VERIFIER_ENABLED:false}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:5000/expense_tracking_system?createDatabaseIfNotExist=true&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:123456}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update} # create / update tables automatically
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
+    open-in-view: ${SPRING_JPA_OPEN_IN_VIEW:false}
+    properties:
+      hibernate:
+        format_sql: ${SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL:false}
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp-relay.brevo.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:968896001@smtp-brevo.com}
+    password: ${SPRING_MAIL_PASSWORD:XTO3GCtx0dLW5pKr}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:true}
+
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      properties:
+        spring.json.add.type.headers: ${SPRING_KAFKA_PRODUCER_PROPERTIES_SPRING_JSON_ADD_TYPE_HEADERS:true}
+      key-serializer: ${SPRING_KAFKA_PRODUCER_KEY_SERIALIZER:org.apache.kafka.common.serialization.StringSerializer}
+      value-serializer: ${SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER:org.springframework.kafka.support.serializer.JsonSerializer}
+      retries: ${SPRING_KAFKA_PRODUCER_RETRIES:3}
+      batch-size: ${SPRING_KAFKA_PRODUCER_BATCH_SIZE:16384}
+      linger-ms: ${SPRING_KAFKA_PRODUCER_LINGER_MS:1}
+      buffer-memory: ${SPRING_KAFKA_PRODUCER_BUFFER_MEMORY:33554432}
+    consumer:
+      key-deserializer: ${SPRING_KAFKA_CONSUMER_KEY_DESERIALIZER:org.apache.kafka.common.serialization.StringDeserializer}
+      value-deserializer: ${SPRING_KAFKA_CONSUMER_VALUE_DESERIALIZER:org.springframework.kafka.support.serializer.JsonDeserializer}
+      properties:
+        spring.json.trusted.packages: ${SPRING_KAFKA_CONSUMER_PROPERTIES_SPRING_JSON_TRUSTED_PACKAGES:com.jaya.auditservice.models}
+        spring.json.use.type.headers: ${SPRING_KAFKA_CONSUMER_PROPERTIES_SPRING_JSON_USE_TYPE_HEADERS:true}
+        spring.json.value.default.type: ${SPRING_KAFKA_CONSUMER_PROPERTIES_SPRING_JSON_VALUE_DEFAULT_TYPE:com.jaya.auditservice.models.AuditEvent}
+      group-id: ${SPRING_KAFKA_CONSUMER_GROUP_ID:audit-group}
+      auto-offset-reset: ${SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET:earliest}
+      enable-auto-commit: ${SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT:true}
+      auto-commit-interval: ${SPRING_KAFKA_CONSUMER_AUTO_COMMIT_INTERVAL:1000}
+
+# Logging configuration
+logging:
+  level:
+    # Kafka loggers
+    org.apache.kafka: ${LOGGING_LEVEL_KAFKA:WARN}
+    org.springframework.kafka: ${LOGGING_LEVEL_SPRING_KAFKA:WARN}
+    # Hibernate/JPA loggers
+    org.hibernate: ${LOGGING_LEVEL_HIBERNATE:WARN}
+    org.hibernate.SQL: ${LOGGING_LEVEL_HIBERNATE_SQL:WARN}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOGGING_LEVEL_HIBERNATE_BINDER:WARN}
+    org.hibernate.orm: ${LOGGING_LEVEL_HIBERNATE_ORM:WARN}
+    # HikariCP connection pool
+    com.zaxxer.hikari: ${LOGGING_LEVEL_HIKARI:WARN}
+    # Spring Data JPA
+    org.springframework.orm.jpa: ${LOGGING_LEVEL_SPRING_ORM_JPA:WARN}
+    org.springframework.data.jpa: ${LOGGING_LEVEL_SPRING_DATA_JPA:WARN}
+    # Keep application logs at INFO
+    com.jaya: ${LOGGING_LEVEL_APP:INFO}
