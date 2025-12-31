@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,17 +43,19 @@ public class Category {
     @Column(name = "expense_value", columnDefinition = "LONGBLOB") // Changed to LONGBLOB
     private Map<Integer, Set<Integer>> expenseIds = new HashMap<>();
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "category_user_ids", joinColumns = @JoinColumn(name = "category_id"))
     @Column(name = "user_id", columnDefinition = "LONGBLOB")
+    @JsonIgnore
     private Set<Integer> userIds = new HashSet<>();
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(
             name = "category_edit_user_ids",
             joinColumns = @JoinColumn(name = "category_id")
     )
     @Column(name = "edit_user_id", columnDefinition = "LONGBLOB")
+    @JsonIgnore
     private Set<Integer> editUserIds = new HashSet<>();
 
 

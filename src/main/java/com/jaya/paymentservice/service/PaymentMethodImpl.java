@@ -8,6 +8,7 @@ import com.jaya.userservice.modal.User;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -22,6 +23,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
     private ServiceHelper helper;
 
     @Override
+    @Transactional(readOnly = true)
     public PaymentMethod getById(Integer userId, Integer id) throws Exception {
         Optional<PaymentMethod> paymentMethod = paymentMethodRepository.findByUserIdAndId(userId, id);
 
@@ -32,6 +34,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
     }
 
     @Override
+    @Transactional
     public PaymentMethod save(PaymentMethod paymentMethod) {
         try {
             // Ensure collections are properly initialized to avoid serialization issues
@@ -60,6 +63,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PaymentMethod> getAllPaymentMethods(Integer userId) {
         List<PaymentMethod> userPaymentMethods = paymentMethodRepository.findByUserId(userId);
         List<PaymentMethod> globalPaymentMethods = paymentMethodRepository.findByIsGlobalTrue();
@@ -78,6 +82,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
     }
 
     @Override
+    @Transactional
     public PaymentMethod createPaymentMethod(Integer userId, PaymentMethod paymentMethod) throws Exception {
         String trimmedName = paymentMethod.getName().trim();
         String type = paymentMethod.getType();
@@ -106,6 +111,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
     }
 
     @Override
+    @Transactional
     public PaymentMethod findOrCreatePaymentMethod(Integer userId, String paymentMethodName) throws Exception {
         // Check if a payment method with the same name (case insensitive) already
         // exists
@@ -139,6 +145,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
     }
 
     @Override
+    @Transactional
     public PaymentMethod updatePaymentMethod(Integer userId, Integer id, PaymentMethod paymentMethod) throws Exception {
         PaymentMethod existingPaymentMethod = paymentMethodRepository.findById(id)
                 .orElseThrow(() -> new Exception("Payment method not found with ID " + id));
@@ -185,6 +192,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
     }
 
     @Override
+    @Transactional
     public void deletePaymentMethod(Integer userId, Integer paymentId) throws Exception {
         PaymentMethod existingPaymentMethod = paymentMethodRepository.findById(paymentId)
                 .orElseThrow(() -> new Exception("Payment method not found with ID: " + paymentId));
@@ -207,6 +215,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PaymentMethod getByName(Integer userId, String name) {
         // Try exact match (case-sensitive)
         List<PaymentMethod> paymentMethods = paymentMethodRepository.findByUserIdAndName(userId, name);
@@ -235,6 +244,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PaymentMethod getByName(Integer userId, String name, String type) {
         String trimmedName = name.trim();
         String trimmedType = type.trim();
@@ -267,6 +277,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PaymentMethod getByNameAndTypeOrCreate(String name, String type) {
         String trimmedName = name.trim();
         String trimmedType = type.trim();
@@ -286,6 +297,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PaymentMethod getByName(String name) {
         // Try exact match (case-sensitive)
         List<PaymentMethod> paymentMethods = paymentMethodRepository.findByName(name);
@@ -306,6 +318,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
     }
 
     @Override
+    @Transactional
     public void deleteAllUserPaymentMethods(Integer userId) {
         // Delete all user-specific (non-global) payment methods
         List<PaymentMethod> userPaymentMethods = paymentMethodRepository.findByUserId(userId);
@@ -329,6 +342,7 @@ public class PaymentMethodImpl implements PaymentMethodService {
 
     // Java
     @Override
+    @Transactional(readOnly = true)
     public List<PaymentMethod> getOthersAndUnusedPaymentMethods(Integer userId) {
         // Get all user-specific and allowed global payment methods
         List<PaymentMethod> userMethods = paymentMethodRepository.findByUserId(userId);
