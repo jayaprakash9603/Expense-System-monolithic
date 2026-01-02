@@ -82,6 +82,27 @@ public class PaymentMethodImpl implements PaymentMethodService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public PaymentMethod getForReportByName(Integer userId, String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return null;
+        }
+        String trimmed = name.trim();
+
+        // Prefer user-specific payment method.
+        Optional<PaymentMethod> userSpecific = paymentMethodRepository
+                .findReportByNameIgnoreCaseAndUserId(trimmed, userId);
+        if (userSpecific.isPresent()) {
+            return userSpecific.get();
+        }
+
+        // Fall back to global payment methods.
+        List<PaymentMethod> globals = paymentMethodRepository
+                .findReportByNameIgnoreCaseAndIsGlobalTrue(trimmed);
+        return globals.isEmpty() ? null : globals.get(0);
+    }
+
+    @Override
     @Transactional
     public PaymentMethod createPaymentMethod(Integer userId, PaymentMethod paymentMethod) throws Exception {
         String trimmedName = paymentMethod.getName().trim();

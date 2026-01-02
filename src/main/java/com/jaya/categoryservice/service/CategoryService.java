@@ -1128,11 +1128,15 @@ public class CategoryService {
      * This includes both user-created categories and global categories
      */
     public List<Category> getAllForUser(Integer userId) {
-        // Get user's own categories
-        List<Category> userCategories = categoryRepository.findByUserId(userId);
+    // NOTE:
+    // Many callers build API responses that access element-collections like
+    // Category.expenseIds/userIds/editUserIds outside of a Hibernate session.
+    // Use EntityGraph-backed queries to ensure these collections are initialized.
+    // Get user's own categories (with details)
+    List<Category> userCategories = categoryRepository.findAllWithDetailsByUserId(userId);
 
-        // Get global categories
-        List<Category> globalCategories = categoryRepository.findByIsGlobalTrue();
+    // Get global categories (with details)
+    List<Category> globalCategories = categoryRepository.findAllGlobalWithDetails();
 
         // Combine both lists, avoiding duplicates
         Set<Integer> userCategoryIds = userCategories.stream()

@@ -46,7 +46,8 @@ public class PaymentMethod {
     @JsonIgnore
     private Set<Integer> userIds = new HashSet<>();
 
-    @ElementCollection(fetch = FetchType.LAZY)
+    // Used in reports where entities may be accessed outside a session.
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "payment_method_edit_user_ids", joinColumns = @JoinColumn(name = "payment_method_id"))
     @Column(name = "edit_user_id" , columnDefinition = "LONGBLOB")
     @JsonIgnore

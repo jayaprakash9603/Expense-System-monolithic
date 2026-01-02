@@ -31,4 +31,10 @@ public interface PaymentMethodService {
 
     List<PaymentMethod> getOthersAndUnusedPaymentMethods(Integer userId);
 
+    /**
+     * Reporting helper: returns a PaymentMethod with collections initialized so that
+     * report builders can safely access userIds/editUserIds.
+     */
+    PaymentMethod getForReportByName(Integer userId, String name);
+
 }

@@ -1327,6 +1327,7 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Map<String, Object> getFilteredExpensesByPaymentMethod(Integer userId, LocalDate fromDate, LocalDate toDate,
             String flowType) {
 
@@ -1395,9 +1396,8 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
             }
             paymentMethodTotals.put(paymentMethod, methodTotal);
 
-            // Fetch PaymentMethod entity to get additional details (description, color,
-            // icon, etc.)
-            PaymentMethod pmEntity = paymentMethodService.getByName(userId, paymentMethod);
+            // Fetch PaymentMethod entity with collections initialized (report-safe)
+            PaymentMethod pmEntity = paymentMethodService.getForReportByName(userId, paymentMethod);
 
             Map<String, Object> methodDetails = new HashMap<>();
             methodDetails.put("id", pmEntity != null ? pmEntity.getId() : null);
@@ -1439,6 +1439,7 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public Map<String, Object> getFilteredExpensesByPaymentMethod(Integer userId, String rangeType, int offset,
             String flowType) {
         LocalDate now = LocalDate.now();
@@ -1497,8 +1498,8 @@ public class ExpenseQueryServiceImpl implements ExpenseQueryService {
             }
             paymentMethodTotals.put(pmName, methodTotal);
 
-            // Here, you would fetch the PaymentMethod entity & populate extra info:
-            PaymentMethod pmEntity = paymentMethodService.getByName(userId, pmName);
+            // Fetch PaymentMethod entity with collections initialized (report-safe)
+            PaymentMethod pmEntity = paymentMethodService.getForReportByName(userId, pmName);
             Map<String, Object> methodDetails = new HashMap<>();
             methodDetails.put("id", pmEntity != null ? pmEntity.getId() : null);
             methodDetails.put("name", pmEntity != null ? pmEntity.getName() : pmName);

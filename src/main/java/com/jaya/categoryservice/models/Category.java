@@ -36,7 +36,10 @@ public class Category {
     @Column(name = "category_user_id")
     private Integer userId = 0;
 
-    @ElementCollection
+    // This map is used in reporting endpoints and needs to be available outside the
+    // persistence context when we build JSON responses. Fetch eagerly to avoid
+    // LazyInitializationException during serialization.
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "category_expense_ids", joinColumns = @JoinColumn(name = "category_id"))
     @MapKeyColumn(name = "expense_key")
     @Lob

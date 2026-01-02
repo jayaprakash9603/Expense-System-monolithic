@@ -38,4 +38,17 @@ public interface PaymentMethodRepository extends JpaRepository<PaymentMethod, In
     Optional<PaymentMethod> findByNameIgnoreCaseAndUserId(@Param("name") String name, @Param("userId") Integer userId);
 
     List<PaymentMethod> findByIsGlobalTrue();
+
+    /**
+     * Reporting/serialization helper: loads element collections eagerly in the same query,
+     * avoiding LazyInitializationException when the entity is used to build response maps.
+     */
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "userIds", "editUserIds" })
+    @Query("SELECT pm FROM PaymentMethod pm WHERE LOWER(pm.name) = LOWER(:name) AND pm.userId = :userId")
+    Optional<PaymentMethod> findReportByNameIgnoreCaseAndUserId(@Param("name") String name,
+                                                               @Param("userId") Integer userId);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "userIds", "editUserIds" })
+    @Query("SELECT pm FROM PaymentMethod pm WHERE LOWER(pm.name) = LOWER(:name) AND pm.isGlobal = true")
+    List<PaymentMethod> findReportByNameIgnoreCaseAndIsGlobalTrue(@Param("name") String name);
 }
