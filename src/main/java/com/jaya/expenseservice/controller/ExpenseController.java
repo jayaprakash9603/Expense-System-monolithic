@@ -9,11 +9,13 @@ import com.jaya.expenseservice.dto.ExpenseDTO;
 import com.jaya.expenseservice.dto.ExpenseDetailsDTO;
 import com.jaya.expenseservice.dto.ProgressStatus;
 import com.jaya.expenseservice.dto.UserSettingsDTO;
+import com.jaya.expenseservice.dto.cashflow.CashflowDashboardResponse;
 import com.jaya.expenseservice.exceptions.UserException;
 import com.jaya.expenseservice.kafka.service.ExpenseNotificationService;
 import com.jaya.expenseservice.models.*;
 import com.jaya.expenseservice.repository.ExpenseRepository;
 import com.jaya.expenseservice.service.*;
+import com.jaya.expenseservice.service.cashflow.CashflowAggregationService;
 import com.jaya.expenseservice.util.BulkProgressTracker;
 import com.jaya.expenseservice.util.UserPermissionHelper;
 import com.jaya.friendshipservice.service.FriendshipService;
@@ -63,6 +65,7 @@ public class ExpenseController extends BaseExpenseController {
     private final ReportHistoryService reportHistoryService;
     private final ExcelExportService excelExportService;
     private final BillService billService;
+    private final CashflowAggregationService cashflowAggregationService;
 
     @Autowired
     public ExpenseController(ExpenseService expenseService,
@@ -79,7 +82,8 @@ public class ExpenseController extends BaseExpenseController {
                              ExpenseNotificationService expenseNotificationService,
                              ReportHistoryService reportHistoryService,
                              ExcelExportService excelExportService,
-                             BillService billService) {
+                             BillService billService,
+                             CashflowAggregationService cashflowAggregationService) {
         this.helper = helper;
         this.userService = userService;
         this.excelService = excelService;
@@ -91,6 +95,7 @@ public class ExpenseController extends BaseExpenseController {
         this.reportHistoryService = reportHistoryService;
     this.excelExportService = excelExportService;
     this.billService = billService;
+        this.cashflowAggregationService = cashflowAggregationService;
     }
 
     @PostMapping("/add-expense")
@@ -2634,6 +2639,7 @@ public class ExpenseController extends BaseExpenseController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false, defaultValue = "false") Boolean groupBy,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) Integer targetId,
             @RequestHeader("Authorization") String jwt) throws Exception {
 
@@ -2727,99 +2733,101 @@ public class ExpenseController extends BaseExpenseController {
                 .map(expense -> expenseMapper.toDTO(expense, maskSensitiveData))
                 .collect(Collectors.toList());
 
-        // If groupBy flag not set or false, return the flat list (existing behavior)
-        if (groupBy == null || !groupBy) {
-            return ResponseEntity.ok(expenseDTOs);
+        List<ExpenseDTO> filteredExpenseDTOs = cashflowAggregationService.filterExpensesBySearchTerm(expenseDTOs,
+                search);
+
+        if (Boolean.TRUE.equals(groupBy)) {
+            // Group by EXPENSE NAME (fallback to "unknown") instead of payment method
+            Map<String, List<ExpenseDTO>> grouped = filteredExpenseDTOs.stream()
+                    .collect(Collectors.groupingBy(e -> {
+                        if (e.getExpense() == null || e.getExpense().getExpenseName() == null
+                                || e.getExpense().getExpenseName().isBlank()) {
+                            return "unknown";
+                        }
+                        return e.getExpense().getExpenseName();
+                    }));
+
+            // Calculate totals per expense name and overall stats
+            Map<String, Double> expenseNameTotals = new LinkedHashMap<>();
+            grouped.forEach((expenseName, list) -> {
+                double total = list.stream()
+                        .filter(exp -> exp.getExpense() != null)
+                        .mapToDouble(exp -> exp.getExpense().getAmountAsDouble())
+                        .sum();
+                expenseNameTotals.put(expenseName, total);
+            });
+            double grandTotal = expenseNameTotals.values().stream().mapToDouble(Double::doubleValue).sum();
+
+            Map<String, Object> summary = new LinkedHashMap<>();
+            summary.put("totalAmount", grandTotal);
+            Map<String, Object> dateRange = new LinkedHashMap<>();
+            dateRange.put("fromDate", effectiveStart.toString());
+            dateRange.put("toDate", effectiveEnd.toString());
+            dateRange.put("flowType", flowType);
+            summary.put("dateRange", dateRange);
+            summary.put("totalExpenseNames", expenseNameTotals.size());
+            summary.put("totalExpenses", filteredExpenseDTOs.size());
+            summary.put("expenseNameTotals", expenseNameTotals);
+            summary.put("totalPaymentMethods", expenseNameTotals.size());
+            summary.put("paymentMethodTotals", expenseNameTotals);
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("summary", summary);
+
+            grouped.forEach((expenseName, list) -> {
+                Map<String, Object> groupBlock = new LinkedHashMap<>();
+                groupBlock.put("expenseCount", list.size());
+                groupBlock.put("totalAmount", expenseNameTotals.getOrDefault(expenseName, 0.0));
+                groupBlock.put("expenseName", expenseName);
+                groupBlock.put("paymentMethod", expenseName);
+
+                Set<String> paymentMethods = list.stream()
+                        .map(e -> e.getExpense() != null ? e.getExpense().getPaymentMethod() : null)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+                groupBlock.put("paymentMethods", paymentMethods);
+
+                List<Map<String, Object>> expenseEntries = list.stream().map(expDTO -> {
+                    Map<String, Object> entry = new LinkedHashMap<>();
+                    if (expDTO.getDate() != null) {
+                        entry.put("date", expDTO.getDate());
+                    }
+                    entry.put("id", expDTO.getId());
+
+                    Map<String, Object> details = new LinkedHashMap<>();
+                    ExpenseDetailsDTO d = expDTO.getExpense();
+                    if (d != null) {
+                        details.put("amount", d.getAmount());
+                        details.put("comments", d.getComments());
+                        details.put("netAmount", d.getNetAmount());
+                        details.put("paymentMethod", d.getPaymentMethod());
+                        details.put("id", d.getId());
+                        details.put("type", d.getType());
+                        details.put("expenseName", d.getExpenseName());
+                        details.put("creditDue", d.getCreditDue());
+                        details.put("masked", d.isMasked());
+                    }
+                    entry.put("details", details);
+                    return entry;
+                }).collect(Collectors.toList());
+
+                groupBlock.put("expenses", expenseEntries);
+                response.put(expenseName, groupBlock);
+            });
+
+            return ResponseEntity.ok(response);
         }
 
-        // Group by EXPENSE NAME (fallback to "unknown") instead of payment method
-        Map<String, List<ExpenseDTO>> grouped = expenseDTOs.stream()
-                .collect(Collectors.groupingBy(e -> {
-                    if (e.getExpense() == null || e.getExpense().getExpenseName() == null
-                            || e.getExpense().getExpenseName().isBlank()) {
-                        return "unknown";
-                    }
-                    return e.getExpense().getExpenseName();
-                }));
+        CashflowDashboardResponse dashboardResponse = cashflowAggregationService.buildDashboardResponse(
+                filteredExpenseDTOs,
+                range,
+                offset,
+                effectiveStart,
+                effectiveEnd,
+                flowType,
+                search);
 
-        // Calculate totals per expense name and overall stats
-        Map<String, Double> expenseNameTotals = new LinkedHashMap<>();
-        grouped.forEach((expenseName, list) -> {
-            double total = list.stream()
-                    .filter(exp -> exp.getExpense() != null)
-                    .mapToDouble(exp -> exp.getExpense().getAmountAsDouble())
-                    .sum();
-            expenseNameTotals.put(expenseName, total);
-        });
-        double grandTotal = expenseNameTotals.values().stream().mapToDouble(Double::doubleValue).sum();
-
-        // Prepare summary section (renamed keys but keep old ones for backward
-        // compatibility where sensible)
-        Map<String, Object> summary = new LinkedHashMap<>();
-        summary.put("totalAmount", grandTotal);
-        Map<String, Object> dateRange = new LinkedHashMap<>();
-        dateRange.put("fromDate", effectiveStart.toString());
-        dateRange.put("toDate", effectiveEnd.toString());
-        dateRange.put("flowType", flowType);
-        summary.put("dateRange", dateRange);
-        summary.put("totalExpenseNames", expenseNameTotals.size());
-        summary.put("totalExpenses", expenseDTOs.size());
-        summary.put("expenseNameTotals", expenseNameTotals);
-        // Backward compatible aliases (if frontend still expecting these temporarily)
-        summary.put("totalPaymentMethods", expenseNameTotals.size());
-        summary.put("paymentMethodTotals", expenseNameTotals);
-
-        // Assemble final response with summary first, then each expense name section
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("summary", summary);
-
-        grouped.forEach((expenseName, list) -> {
-            Map<String, Object> groupBlock = new LinkedHashMap<>();
-            groupBlock.put("expenseCount", list.size());
-            groupBlock.put("totalAmount", expenseNameTotals.getOrDefault(expenseName, 0.0));
-            groupBlock.put("expenseName", expenseName); // primary grouping key
-            groupBlock.put("paymentMethod", expenseName); // backward compat alias for frontend expecting this key
-
-            // Gather set of distinct payment methods in this expense name group (optional
-            // insight)
-            Set<String> paymentMethods = list.stream()
-                    .map(e -> e.getExpense() != null ? e.getExpense().getPaymentMethod() : null)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-            groupBlock.put("paymentMethods", paymentMethods);
-
-            // Transform each expense DTO into a simplified structure
-            List<Map<String, Object>> expenseEntries = list.stream().map(expDTO -> {
-                Map<String, Object> entry = new LinkedHashMap<>();
-                if (expDTO.getDate() != null) {
-                    entry.put("date", expDTO.getDate());
-                }
-                entry.put("id", expDTO.getId());
-
-                Map<String, Object> details = new LinkedHashMap<>();
-                ExpenseDetailsDTO d = expDTO.getExpense();
-                if (d != null) {
-                    details.put("amount", d.getAmount()); // Can be Double or String ("*****")
-                    details.put("comments", d.getComments());
-                    details.put("netAmount", d.getNetAmount()); // Can be Double or String ("*****")
-                    details.put("paymentMethod", d.getPaymentMethod());
-                    details.put("id", d.getId());
-                    details.put("type", d.getType());
-                    details.put("expenseName", d.getExpenseName());
-                    details.put("creditDue", d.getCreditDue()); // Can be Double or String ("*****")
-                    details.put("masked", d.isMasked()); // Masking flag
-                }
-                entry.put("details", details);
-                return entry;
-            }).collect(Collectors.toList());
-
-            groupBlock.put("expenses", expenseEntries);
-            // Backward compatible key (if frontend used paymentMethod previously as map
-            // key)
-            response.put(expenseName, groupBlock);
-        });
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(dashboardResponse);
     }
 
     @GetMapping("/range/offset")

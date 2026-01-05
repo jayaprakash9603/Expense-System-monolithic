@@ -1,7 +1,7 @@
 package com.jaya.budgetservice.kafka.consumer;
 
 import com.jaya.budgetservice.dto.BulkBudgetRequest;
-import com.jaya.budgetservice.dto.ExpenseBudgetLinkingEvent;
+import com.jaya.expenseservice.dto.ExpenseBudgetLinkingEvent;
 import com.jaya.budgetservice.models.Budget;
 import com.jaya.budgetservice.service.BulkBudgetLinkingService;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class BudgetLinkingConsumer {
     /**
      * Listen for expense-budget linking events
      */
-    @KafkaListener(topics = "expense-budget-linking-events", groupId = "budget-service-linking-group", containerFactory = "expenseBudgetLinkingKafkaListenerContainerFactory")
+    @KafkaListener(topics = "expense-budget-linking-events", groupId = "budget-service-linking-group", containerFactory = "budgetExpenseBudgetLinkingKafkaListenerContainerFactory")
     public void consumeLinkingEvent(ExpenseBudgetLinkingEvent event) {
         try {
             log.info("Received linking event in Budget Service: {}", event.getEventType());

@@ -1,6 +1,6 @@
 package com.jaya.budgetservice.config;
 
-import com.jaya.budgetservice.dto.ExpenseBudgetLinkingEvent;
+import com.jaya.expenseservice.dto.ExpenseBudgetLinkingEvent;
 import com.jaya.budgetservice.events.BudgetExpenseEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -77,17 +77,21 @@ public class KafkaConfig {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
         props.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.jaya.dto,com.jaya.events,com.jaya.budgetservice.dto");
-        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
-        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "com.jaya.budgetservice.dto.ExpenseBudgetLinkingEvent");
+    props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.jaya.dto,com.jaya.events,com.jaya.budgetservice.dto,com.jaya.expenseservice.dto");
+    props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
+    // Deserialize directly into the Expense Service DTO type to match the producer
+    props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "com.jaya.expenseservice.dto.ExpenseBudgetLinkingEvent");
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
+    // Listener container factory for ExpenseBudgetLinkingEvent in Budget Service
+    // Use a bean name that does not clash with the one defined in Expense Service
     @Bean(name = "budgetExpenseBudgetLinkingKafkaListenerContainerFactory")
-    public ConcurrentKafkaListenerContainerFactory<String, ExpenseBudgetLinkingEvent> expenseBudgetLinkingKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, ExpenseBudgetLinkingEvent> factory = new ConcurrentKafkaListenerContainerFactory<>();
+    public ConcurrentKafkaListenerContainerFactory<String, ExpenseBudgetLinkingEvent> budgetExpenseBudgetLinkingKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, ExpenseBudgetLinkingEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(expenseBudgetLinkingConsumerFactory());
         return factory;
     }
